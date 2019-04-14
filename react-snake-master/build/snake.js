@@ -28,6 +28,8 @@ var speedTwo = false;
 var speedThree = false;
 var speed = Number;
 
+var number = Number;
+
 
 var SnakeGame = React.createClass({
 	displayName: 'SnakeGame',
@@ -75,44 +77,60 @@ var SnakeGame = React.createClass({
 		setTimeout(this._tick, speed);
 
 	}),
-	
+
 	// Sets speed based off button selected. 
 	_currentSpeed: React.autoBind(function () {
-		if(speedOne){
+		if (speedOne) {
 			speed = 100;
 		}
-		if(speedTwo){
+		if (speedTwo) {
 			speed = 50;
 		}
-		if(speedThree){
-			speed = 10;		
+		if (speedThree) {
+			speed = 10;
 		}
 		this.refs.board.getDOMNode().focus();
-		setTimeout(this._tick, speed);	
+		setTimeout(this._tick, speed);
 	}),
-	
+
 	// Sets speed to speed one 
 	_speedOne: React.autoBind(function () {
 		speedOne = true;
 		speedTwo = false;
-		speedThree = false;	
-		_currentSpeed();	
+		speedThree = false;
+		_currentSpeed();
 	}),
 
 	// Sets speed to speed Two 
 	_speedTwo: React.autoBind(function () {
 		speedOne = false;
 		speedTwo = true;
-		speedThree = false;	
+		speedThree = false;
 		_currentSpeed();
 	}),
-	
+
 	// Sets speed to speed Three 
 	_speedThree: React.autoBind(function () {
 		speedOne = false;
 		speedTwo = false;
-		speedThree = true;	
-		_currentSpeed();	
+		speedThree = true;
+		_currentSpeed();
+	}),
+
+	// Sets snake color 
+	_snakeColor: React.autoBind(function () {
+
+		if (this.state.snake.length < 10) {
+			number = 1;
+		} else if (this.state.snake.length < 20) {
+			number = 2;
+		} else if (this.state.snake.length < 30) {
+			number = 3;
+		} else if (this.state.snake.length < 40) {
+			number = 4;
+		}else if (this.state.snake.length < 50) {
+			number = 5;
+		}
 	}),
 
 	_tick: React.autoBind(function () {
@@ -184,16 +202,25 @@ var SnakeGame = React.createClass({
 		var numCols = this.props.numCols || 20;
 		var cellSize = this.props.cellSize || 30;
 
+		this._snakeColor();
+
 		for (var row = 0; row < numRows; row++) {
 			for (var col = 0; col < numCols; col++) {
 				var code = this.state.board[numCols * row + col];
 				var type = code == BODY ? 'body' : code == FOOD ? 'food' : 'null';
-				cells.push(React.DOM.div({
-					className: type + '-cell'
-				}, null));
+				if (type == 'body') {
+					cells.push(React.DOM.div({
+						className: type + number + '-cell'
+					}, null))
+				} else {
+					cells.push(React.DOM.div({
+						className: type + '-cell'
+					}, null));
+				}
 			}
 		}
-// Added 3 speed buttons, pause button & title. 
+
+		// Added 3 speed buttons, pause button & title. 
 		return (
 			React.DOM.div({
 				className: "snake-game"
@@ -209,21 +236,21 @@ var SnakeGame = React.createClass({
 				}, "Pause"),
 		React.DOM.button({
 					onClick: this._speedOne
-				}, "Speed 1"),
+				}, "Beginner"),
 		React.DOM.button({
 					onClick: this._speedTwo
-				}, "Speed 2"),
+				}, "Intermediate"),
 		React.DOM.button({
 					onClick: this._speedThree
-				}, "Speed 3"),
+				}, "Expert"),
 		React.DOM.h1({
 					className: "snake-score"
 				}, [""]),
         React.DOM.div({
 						ref: "board",
 						className: 'snake-board' + (this.state.gameOver ? ' game-over' : ''),
-						tabIndex: 0,	
-          				onFocus:this._resume,
+						tabIndex: 0,
+						onFocus: this._resume,
 						onKeyDown: this._handleKey,
 						style: {
 							width: numCols * cellSize,
