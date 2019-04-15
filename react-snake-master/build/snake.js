@@ -1,8 +1,7 @@
 /**
  * @jsx React.DOM
  */
-// import React from "react"
-// import reactDom from "react-dom"
+
 
 var BODY = 1,
 	FOOD = 2;
@@ -22,10 +21,13 @@ var DIRS = {
 // Not being used yet
 var audio = new Audio("Lil Nas X - Old Town Road (feat. Billy Ray Cyrus) [Remix].mp3");
 
-// Variables for speed manipulation. 
+// Variables for speed manipulation.
 var speedOne = true;
 var speedTwo = false;
 var speedThree = false;
+var auto = false;
+var aDirection;
+var currentDir = KEYS.down;
 var speed = Number;
 
 var number = Number;
@@ -54,6 +56,7 @@ var SnakeGame = React.createClass({
 
 	_reset: React.autoBind(function () {
 		this.setState(this.getInitialState());
+		auto = false;
 		this._resume();
 	}),
 
@@ -78,7 +81,7 @@ var SnakeGame = React.createClass({
 
 	}),
 
-	// Sets speed based off button selected. 
+	// Sets speed based off button selected.
 	_currentSpeed: React.autoBind(function () {
 		if (speedOne) {
 			speed = 100;
@@ -93,7 +96,7 @@ var SnakeGame = React.createClass({
 		setTimeout(this._tick, speed);
 	}),
 
-	// Sets speed to speed one 
+	// Sets speed to speed one
 	_speedOne: React.autoBind(function () {
 		speedOne = true;
 		speedTwo = false;
@@ -101,7 +104,7 @@ var SnakeGame = React.createClass({
 		_currentSpeed();
 	}),
 
-	// Sets speed to speed Two 
+	// Sets speed to speed Two
 	_speedTwo: React.autoBind(function () {
 		speedOne = false;
 		speedTwo = true;
@@ -109,7 +112,7 @@ var SnakeGame = React.createClass({
 		_currentSpeed();
 	}),
 
-	// Sets speed to speed Three 
+	// Sets speed to speed Three
 	_speedThree: React.autoBind(function () {
 		speedOne = false;
 		speedTwo = false;
@@ -117,7 +120,12 @@ var SnakeGame = React.createClass({
 		_currentSpeed();
 	}),
 
-	// Sets snake color 
+	_autoPlay: React.autoBind(function () {
+		auto = true;
+		aDirection = this.state.direction;
+	}),
+
+	// Sets snake color
 	_snakeColor: React.autoBind(function () {
 
 		if (this.state.snake.length < 10) {
@@ -128,7 +136,7 @@ var SnakeGame = React.createClass({
 			number = 3;
 		} else if (this.state.snake.length < 40) {
 			number = 4;
-		}else if (this.state.snake.length < 50) {
+		} else if (this.state.snake.length < 50) {
 			number = 5;
 		}
 	}),
@@ -140,13 +148,19 @@ var SnakeGame = React.createClass({
 		var snake = this.state.snake;
 		var board = this.state.board;
 		var growth = this.state.growth;
-		var direction = this.state.direction;
+		var direction;
+
 
 		var numRows = this.props.numRows || 20;
 		var numCols = this.props.numCols || 20;
+		if (auto) {
+			direction = getAutoDirection(snake[0], numRows, numCols)
+		} else {
+			direction = this.state.direction;
+		}
 		var head = getNextIndex(snake[0], direction, numRows, numCols);
 
-		if (snake.indexOf(head) != -1) {
+		if (snake.indexOf(head) != -1 || this.state.snake.length >= 399) {
 			this.setState({
 				gameOver: true
 			});
@@ -182,7 +196,7 @@ var SnakeGame = React.createClass({
 			direction: direction,
 		});
 
-		// Replaced method to change speed. 
+		// Replaced method to change speed.
 		this._currentSpeed();
 
 	}),
@@ -204,6 +218,7 @@ var SnakeGame = React.createClass({
 
 		this._snakeColor();
 
+
 		for (var row = 0; row < numRows; row++) {
 			for (var col = 0; col < numCols; col++) {
 				var code = this.state.board[numCols * row + col];
@@ -211,6 +226,7 @@ var SnakeGame = React.createClass({
 				if (type == 'body') {
 					cells.push(React.DOM.div({
 						className: type + number + '-cell'
+
 					}, null))
 				} else {
 					cells.push(React.DOM.div({
@@ -220,38 +236,44 @@ var SnakeGame = React.createClass({
 			}
 		}
 
-		// Added 3 speed buttons, pause button & title. 
+
+
+
+		// Added 3 speed buttons, pause button & title.
 		return (
 			React.DOM.div({
 				className: "snake-game"
 			}, [
-        React.DOM.h1({
+                React.DOM.h1({
 					className: "snake-header"
 				}, ["Snake Game"]),
-        React.DOM.h1({
+                React.DOM.h1({
 					className: "snake-score"
 				}, ["Length: ", this.state.snake.length]),
-		React.DOM.button({
+                React.DOM.button({
 					onClick: this._pause
 				}, "Pause"),
-		React.DOM.button({
+                React.DOM.button({
 					onClick: this._speedOne
 				}, "Beginner"),
-		React.DOM.button({
+                React.DOM.button({
 					onClick: this._speedTwo
 				}, "Intermediate"),
-		React.DOM.button({
+                React.DOM.button({
 					onClick: this._speedThree
 				}, "Expert"),
-		React.DOM.h1({
+                React.DOM.button({
+					onClick: this._autoPlay
+				}, "Auto Play"),
+                React.DOM.h1({
 					className: "snake-score"
 				}, [""]),
-        React.DOM.div({
+                React.DOM.div({
 						ref: "board",
 						className: 'snake-board' + (this.state.gameOver ? ' game-over' : ''),
 						tabIndex: 0,
 						onFocus: this._resume,
-						onKeyDown: this._handleKey,
+						onKeyDown: !auto ? this._handleKey : null,
 						style: {
 							width: numCols * cellSize,
 							height: numRows * cellSize
@@ -259,17 +281,20 @@ var SnakeGame = React.createClass({
 					},
 					cells
 				),
-        React.DOM.div({
+                React.DOM.div({
 					className: "snake-controls"
 				}, [
-          this.state.paused ? React.DOM.button({
+                        this.state.paused ? React.DOM.button({
 						onClick: this._resume
 					}, "Resume") : null,
-          this.state.gameOver ? React.DOM.button({
+                        this.state.paused ? React.DOM.button({
 						onClick: this._reset
 					}, "New Game") : null,
-        ])
-      ])
+                        this.state.gameOver ? React.DOM.button({
+						onClick: this._reset
+					}, "New Game") : null,
+                    ])
+            ])
 		);
 	}
 });
@@ -298,8 +323,31 @@ function getNextIndex(head, direction, numRows, numCols) {
 			return;
 	}
 
+
 	// translate new x/y coords back into array index
 	return (numCols * y) + x;
+}
+//var prevDirection;
+function getAutoDirection(head, numRows, numCols) {
+
+	var y = Math.floor(head / numCols);
+
+	if (y == 0 && currentDir == KEYS.left) {
+		currentDir = KEYS.down;
+		return KEYS.down;
+	} else if (y == 0) {
+		currentDir = KEYS.left;
+		return KEYS.left;
+	} else if (y >= numRows - 1 && currentDir == KEYS.left) {
+		currentDir = KEYS.up;
+		return KEYS.up;
+	} else if (y >= numRows - 1) {
+		currentDir = KEYS.left;
+		return KEYS.left;
+	} else {
+		return currentDir;
+	}
+
 }
 
 React.renderComponent(SnakeGame(null, null), document.body);
